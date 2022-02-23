@@ -3,3 +3,7 @@
 ################################################################################
 
 /.vs
+/src/WroverDisplayTest/.vs/WroverDisplayTest
+/src/WroverDisplayTest/bin/Debug
+/src/WroverDisplayTest/obj/Debug
+/src/WroverDisplayTest/packages
