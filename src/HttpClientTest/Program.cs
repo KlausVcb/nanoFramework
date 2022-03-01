@@ -9,6 +9,8 @@ namespace HttpClientTest
 {
     public class Program
     {
+        private static HttpClient HttpClient { get; set; }
+
         public static void Main()
         {
             var wifiAdapters = WiFiAdapter.FindAllAdapters();
@@ -25,24 +27,43 @@ namespace HttpClientTest
             // is the datetime current? you need the datetime to be current for SSL to work correctly.
             Debug.WriteLine($"{DateTime.UtcNow.ToString("u")}");
 
-            var httpClient = new System.Net.Http.HttpClient
+            HttpClient = new HttpClient
             {
-                HttpsAuthentCert = GetGoogleCertificate(),
                 SslProtocols = System.Net.Security.SslProtocols.Tls12
             };
 
-            var url1 = "http://neverssl.com/";
-
-            var response1 = httpClient.Get(url1);
-            var test1 = response1.Content.ReadAsString();
-
-            var url2 = "https://www.google.com/";
-
             //fails with a SocketException - CLR_E_FAIL
-            var response2 = httpClient.Get(url2);
-            var test2 = response2.Content.ReadAsString();
+            ExecuteRequest("https://www.google.com/", GetGoogleCertificate());
+
+            //fails with a ArgumentOutOfRangeException
+            ExecuteRequest("https://www.google.com/", GetGlobalSignCertificate());
+
+            //success!
+            ExecuteRequest("https://global-root-ca.chain-demos.digicert.com/", GetDigiCertCertificate());
+
+            //sanity check... success!
+            ExecuteRequest("https://global-root-ca.chain-demos.digicert.com/info/index.html", GetDigiCertCertificate());
 
             Thread.Sleep(Timeout.Infinite);
+        }
+
+        private static void ExecuteRequest(string url, X509Certificate certificate)
+        {
+            try
+            {
+                HttpClient.HttpsAuthentCert = certificate;
+
+                var response = HttpClient.Get(url);
+                var test = response.Content.ReadAsString();
+
+                Debug.WriteLine($"Calling {url} returned with {response.StatusCode}");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Calling {url} returned with error {ex.GetType().Name}");
+            }
+
+            Thread.Sleep(2000);
         }
 
         private static X509Certificate GetGlobalSignCertificate()
@@ -147,6 +168,32 @@ NzZ1GDwQzzH25yELNzrUKwW3fUPt4xyS6BUinI3KC9F2ELPwccIjTdgMgNrYMHV3
 Tn6f4P5lR4aFuwFYcz2d+P9/2cYNVD42Yy/3L6XxA1vD4edvdFDZoOay3Q6p0XOx
 kKwiSywCkh7o9PtJVE5xCyeX5EvQJinodDdllgCJFwQ0qTEoBmrdiEhiQkheq5rl
 oIupGoAjtQcI79DiGzygdH07nLandHQoNr9UL44XLzd5NeTncV+aam7k5Hk=
+-----END CERTIFICATE-----");
+        }
+
+        private static X509Certificate GetDigiCertCertificate()
+        {
+            return new X509Certificate(@"-----BEGIN CERTIFICATE-----
+MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD
+QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB
+CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97
+nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt
+43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P
+T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4
+gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO
+BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR
+TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw
+DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr
+hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg
+06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF
+PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls
+YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
+CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 -----END CERTIFICATE-----");
         }
     }
