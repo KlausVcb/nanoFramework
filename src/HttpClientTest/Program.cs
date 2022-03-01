@@ -22,6 +22,9 @@ namespace HttpClientTest
                 if (result.ConnectionStatus == WiFiConnectionStatus.Success) break;
             }
 
+            // is the datetime current? you need the datetime to be current for SSL to work correctly.
+            Debug.WriteLine($"{DateTime.UtcNow.ToString("u")}");
+
             var httpClient = new System.Net.Http.HttpClient
             {
                 HttpsAuthentCert = GetGoogleCertificate(),
